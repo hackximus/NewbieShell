@@ -74,3 +74,6 @@ NewbieShell requests the full path of the file. After a successful upload, the f
 If you have found any credentials during the attack, you have the possibility to generate a new shell with these credentials using NewbieShell.
 The system will ask for the username, password and domain. If there is no domain, this line can be left blank. 
 
+## Future
+
+My goal would be to generate as many keywords as possible.
