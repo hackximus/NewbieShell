@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("NewbieShell")]
 [assembly: AssemblyDescription("Shell for beginners")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Goran Stijakovic")]
+[assembly: AssemblyCompany("CYBS Cybersecurity")]
 [assembly: AssemblyProduct("NewbieShell")]
 [assembly: AssemblyCopyright("Copyright ©  2022")]
 [assembly: AssemblyTrademark("")]

