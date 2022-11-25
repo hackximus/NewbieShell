@@ -83,6 +83,9 @@ The system will ask for the username, password and domain. If there is no domain
 
 After a disconnection, the program tries to reconnect to the attacker. A timeout period can be defined for this. After this time the program sends a new request to the attacker.
 
+## Disclaimer
+I do not take any responsability! 
+
 ## Future
 
 My goal would be to generate as many keywords as possible.
